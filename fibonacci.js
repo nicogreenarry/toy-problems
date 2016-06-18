@@ -1,6 +1,6 @@
 // TRADITIONAL FIBONACCI
 var fib = (function(){ // IIFE to return a memoized function
-  var cache = [null,1,1];
+  var cache = [0,1,1];
 
   return function(n){
     if(cache[n] !== undefined) {return cache[n];} // return the cached value if it exists
