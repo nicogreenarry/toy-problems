@@ -14,8 +14,6 @@ function translateRomanNumeral (romanNumeral) {
   });
   if(null === romanNumeral) {return 'null';}
 
-  const keys = ['I','V','X','L','C','D','M'];
-
   const len = romanNumeral.length;
   if(0 === len) {return 0;}
 
