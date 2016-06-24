@@ -1,32 +1,3 @@
-// This was my work before I was able to read the problem description. It's incomplete.
-//function letterFrequency(str){
-//  var freq = getLetterFrequencies(str);
-//
-//
-//  // HOISTED HELPER FUNCTIONS
-//  function getLetterFrequencies(str){
-//    var freq = {};
-//
-//    for(var i = 0; i < str.length; i++){
-//      freq[str[i]] = freq[str[i]] ? freq[str[i]] + 1 : 1;
-//    }
-//
-//    return freq;
-//  }
-//
-//  function findMostFrequent(freq){
-//    var letters = Object.keys(freq);
-//    var mostFrequent = null;
-//    var highestFrequency = 0;
-//
-//    for(var i = 0; i < letters.length; i++){
-//      if(freq[letters[i]] > highestFrequency){
-//
-//      }
-//    }
-//  }
-//}
-
 // Problem description: Write a function that takes as its input a string and returns an array of arrays as shown below
 // sorted in descending order by frequency and then by ascending order by character.
 function characterFrequency (string) {

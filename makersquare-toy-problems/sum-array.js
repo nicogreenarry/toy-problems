@@ -1,3 +1,8 @@
+/*
+ Given an array of numbers, calculate the greatest contiguous sum of numbers in it. A single array item will count as a contiguous sum.
+ */
+
+// TODO: This can be done in linear time. Do that next time.
 function sumArray (array) {
   return Math.max(array.reduce((sum,num) => (sum + num)),
     array.length > 1 ?

@@ -1,3 +1,7 @@
+/*
+ Write a function numberToEnglish, it should take a number and return the number as a string using English words.
+ */
+
 // HELPER OBJECTS PROVIDED TO US
 var numbersToWords = {
   0: 'zero',

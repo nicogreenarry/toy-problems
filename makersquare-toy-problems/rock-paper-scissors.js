@@ -1,3 +1,7 @@
+/*
+ Given a number of rounds n, return all the possible rock-paper-scissors play possibilities for that number of rounds.
+ */
+
 // MY REFACTORED ANSWER
 // Originally I used three nested for loops. It worked fine, but it was ugly. I was the first of my cohort to submit,
 // beaten only by 7 seniors. Even after refactoring to the below, using a recursive function, and some debugging, I was
