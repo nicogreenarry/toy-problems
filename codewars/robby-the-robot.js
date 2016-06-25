@@ -11,19 +11,31 @@ function getCommands(field, power) {
   }
   const t = zToXy(field.indexOf('T'),side); // get xy coords of terminus
 
-  field[xyToZ(robby.pos, side)] = '#'; // Block our current position so we don't return here in future paths
+  function move(robby, field){
+    field[xyToZ(robby.pos, side)] = '#'; // Block our current position so we don't return here in future paths
 
-  // Consider possible moves (i.e. directions Robby can move in)
-  const nextMoves = getNextMoves(robby.pos, field);
-  // Recursively move in all directions (using a Move function), in descending order of likelihood. Move function:
-    // Params:
-      // new Robby (use Object.assign to create a clone - does it return anything?)
-      // pass in new field with former location blocked off
-    // Are we blocked in all directions? If so, return empty array
-    // Compare current best path to best case possible; if current power used + power required for best case >= current best path, return []
-    // If we have arrived, save the bestSoFar info
-      // If bestSoFar == best possible (will need to account for turns necessary), return bestSoFar.
-    // Should have a chooseBestPath function; when recursing through multiple paths,
+    // Consider possible moves (i.e. directions Robby can move in)
+    const nextMoves = getNextMoves(robby.pos, field);
+    // Recursively move in all directions (using a Move function), in descending order of likelihood. Move function:
+    nextMoves.forEach(move => { // Optimizing: Is there a way I could break early by using a for loop?
+      const newRobby = Object.assign({}, robby);
+
+
+    });
+      // Params:
+        // new Robby (use Object.assign to create a clone - does it return anything?)
+        // pass in new field with former location blocked off
+      // Are we blocked in all directions? If so, return empty array
+      // Compare current best path to best case possible; if current power used + power required for best case >= current best path, return []
+      // If we have arrived, save the bestSoFar info
+        // If bestSoFar == best possible (will need to account for turns necessary), return bestSoFar.
+      // Should have a chooseBestPath function; when recursing through multiple paths,
+
+  }
+
+  move(robby, field);
+
+  return bestSoFar.path;
 }
 
 function xyToZ(x,y,side){
