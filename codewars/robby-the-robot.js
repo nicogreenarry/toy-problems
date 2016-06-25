@@ -2,55 +2,57 @@
 
 function getCommands(field, power) {
   const side = Math.sqrt(field.length);
-  const bestSoFar = { path: [], power: 0 };
+  const bestSoFar = { path: [], powerUsed: 0 };
   const robby = {
     pos: zToXy(field.indexOf('S'),side),
     orientation: 0, // 0 == north, 1 == east, 2 == south, 3 == west,
     path: [],
     powerUsed: 0
   };
-  //const t = zToXy(field.indexOf('T'),side); // get xy coords of terminus
+  const t = zToXy(field.indexOf('T'),side); // get xy coords of terminus
+  // TODO: Optimizations that would decrease runtime:
+    // If bestSoFar == best possible (will need to account for turns necessary), return bestSoFar. Probably have a "done"
+      // variable, and each move function checks that first, and only continues if it's false.
 
   function move(robby, field){
-    // Consider possible moves (i.e. directions Robby can move in)
-    const nextMoves = getNextMoves(robby.pos, field);
+    // END CONDITIONS --------------------------------------------------------------------------------------------------
+    const distToT = getDist(robby.pos, t);
+    if(0 === distToT){ // We reached Terminus!
+      if(bestSoFar.path.length && (bestSoFar.path.length > robby.path)){ // If bestSoFar.path isn't an empty array, and we found a superior path
+        bestSoFar.path = robby.path;
+        bestSoFar.powerUsed = robby.powerUsed;
+      }
+      return;
+    }
+    if(robby.powerUsed + distToT >= Math.min(power, bestSoFar.powerUsed)){ // If the power used + distance remaining > either available power or best path recorded, then return early
+      // TODO: I should incorporate the minimum energy required for turns into the left side of the if conditional; will probably need helper function for that
+      return;
+    }
+
+    // IF NO END CONDITIONS, RECURSIVELY CONSIDER NEXT MOVES -----------------------------------------------------------
+    const nextMoves = getNextMoves(robby.pos, field); // Consider possible moves (i.e. directions Robby can move in)
     if(0 === nextMoves.length){ // If no possible moves
-      return [];
+      return;
     }
     // Recursively move in all directions (using a Move function), in descending order of likelihood. Move function:
-    nextMoves.forEach(move => { // Optimizing: Is there a way I could break early by using a for loop?
-      const orientationChange = Math.abs(robby.orientation - move.direction); // e.g. abs(0 (north) - 2 (south)) --> 2
-      
-      let turnsRequired;
-      if(!orientationChange){
-        turnsRequired = [];
-      }else{
-        turnsRequired =
-      }
+    nextMoves.forEach(aMove => { // Optimizing: Is there a way I could break early by using a for loop?
+      const orientationChange = Math.abs(robby.orientation - aMove.direction); // e.g. abs(0 (north) - 2 (south)) --> 2
+      const relativeDirectionToTurns = {0: [], 1: ['r'], 2: ['r', 'r'], 3: ['l']};
       const newRobby = {
-        pos: move.newPos,
-        orientation: move.direction,
-        powerUsed: robby.powerUsed + orientationChange + 1 // The 1 is for the move forward
+        pos: aMove.newPos,
+        orientation: aMove.direction,
+        powerUsed: robby.powerUsed + orientationChange + 1, // The 1 is for the move forward
+        path: robby.path.concat(
+          relativeDirectionToTurns[(aMove.direction - robby.orientation + 4) % 4], // concat the turns required
+          'f' // ...and the move forward
+        )
       };
-      newRobby.path = robby.path.concat(
-        ( 'f').split(',')
-      )
 
-      // determine orientation change required; increment powerUsed accordingly
-      // Update orientation and position
-      // Params:
-        // pass in new field with former location blocked off
-      // Are we blocked in all directions? If so, return empty array
-      // Compare current best path to best case possible; if current power used + power required for best case >= current best path, return []
-      // If we have arrived, save the bestSoFar info
-        // If bestSoFar == best possible (will need to account for turns necessary), return bestSoFar.
-      // Should have a chooseBestPath function; when recursing through multiple paths,
-
-
+      // Set up the updated field for the next move: block off current(previous) place we were, so we don't backtrack
       const newField = field.slice();
       newField[xyToZ(robby.pos, side)] = '#'; // Block our current position so we don't return here in future paths
 
-
+      move(newRobby,newField);
     });
 
   }
@@ -62,7 +64,10 @@ function getCommands(field, power) {
 
 function xyToZ(x,y,side){
   if(Array.isArray(x)){ // User may submit coords as a single array rather than two separate params
-    [x, y, side] = [x[0], x[1], y];
+    side = y;
+    y = x[1];
+    x = x[0];
+    // [x, y, side] = [x[0], x[1], y];
   }
   return x + (side - y - 1) * side; // 'z' coordinate, i.e. the coordinate on the input string
 }
@@ -106,6 +111,8 @@ function validCoord(x,y,side){
   return !(x < 0 || y < 0
             || x > side-1 || y > side-1);
 }
-//for(let i = 0; i < 9; i++){
-//  console.log(zToXy(i,9));
-//}
+
+console.log('Path: ' + getCommands('T.S.', 10).join(''));      // 'f'
+console.log('Path: ' + getCommands('S.......T', 10).join('')); // 'rffrff'
+console.log('Path: ' + getCommands('S.......T', 5).join(''));  // ''
+console.log('Path: ' + getCommands('S#.##...T', 20).join('')); // ''
