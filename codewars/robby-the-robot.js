@@ -7,7 +7,7 @@ function getCommands(field, power) {
   let pathsConsidered = 0;
   const robby = {
     pos: zToXy(field.indexOf('S'),side),
-    orientation: 0, // 0 == north, 1 == east, 2 == south, 3 == west,
+    orientation: 0,// [0,1], // as an x/y coordinate relative to the current position
     path: [],
     powerUsed: 0
   };
@@ -17,7 +17,7 @@ function getCommands(field, power) {
       // variable, and each move function checks that first, and only continues if it's false.
 
   function move(robby, field){
-    debugger;
+    //debugger;
     // END CONDITIONS --------------------------------------------------------------------------------------------------
     const distToT = getDist(robby.pos, t).dist;
     if(0 === distToT){ // We reached Terminus!
@@ -35,14 +35,21 @@ function getCommands(field, power) {
     }
 
     // IF NO END CONDITIONS, RECURSIVELY CONSIDER NEXT MOVES -----------------------------------------------------------
-    const nextMoves = getNextMoves(robby.pos, field); // Consider possible moves (i.e. directions Robby can move in)
+    const nextMoves = getNextMoves(robby, field); // Consider possible moves (i.e. directions Robby can move in)
     if(0 === nextMoves.length){ // If no possible moves
       pathsConsidered++;
       return;
     }
     // Recursively move in all directions (using a Move function), in descending order of likelihood. Move function:
     nextMoves.forEach(aMove => { // Optimizing: Is there a way I could break early by using a for loop?
-      const orientationChange = Math.abs(robby.orientation - aMove.direction); // e.g. abs(0 (north) - 2 (south)) --> 2
+      const orientationChange = Math.abs(robby.orientation - aMove.direction) % 2;
+      // 1,0 vs. 1,0 --> 0
+      // 1,0 vs. 0,1 --> 1
+      // 1,0 vs. 0,-1 --> 1
+      // 1,0 vs. -1,0 --> 2
+
+
+
       const relativeDirectionToTurns = {0: [], 1: ['r'], 2: ['r', 'r'], 3: ['l']};
       const newRobby = {
         pos: aMove.newPos,
@@ -64,7 +71,7 @@ function getCommands(field, power) {
 
   move(robby, field);
 
-  console.log(`Considered ${pathsConsidered} paths.`);
+  console.log(`Considered ${pathsConsidered} paths, and used ${bestSoFar.powerUsed} power. Best path: ${bestSoFar.path.join('')}`);
   return bestSoFar.path;
 
   // HELPER FUNCTIONS --------------------------------------------------------------------------------------------------
@@ -85,7 +92,7 @@ function getCommands(field, power) {
     };
   }
 
-  function getNextMoves(pos,field){
+  function getNextMoves(robby,field){
     const side = Math.sqrt(field.length);
     const moves = [];
     const moveDirections = [
@@ -95,7 +102,7 @@ function getCommands(field, power) {
       {posChange: [0,-1], direction: '2'}
     ];
     moveDirections.forEach(move => {
-      const newPos = [pos[0] + move.posChange[0], pos[1] + move.posChange[1]];
+      const newPos = [robby.pos[0] + move.posChange[0], robby.pos[1] + move.posChange[1]];
       const charAtNewPos = field[xyToZ(newPos,side)];
       if(!validCoord(newPos,side)) {return;}   // return if the new position falls outside the field
       if('#' === charAtNewPos) {return;}  // return if the new position is a block
@@ -103,7 +110,12 @@ function getCommands(field, power) {
       moves.push({newPos: newPos, direction: move.direction});                 // push the new position if it's still a legal move
     });
 
-    moves.sort((moveA,moveB) => getDist(moveA.newPos,t).dist - getDist(moveB.newPos,t).dist);
+    moves.sort((moveA,moveB) => {
+      const slope = (t[1] - robby.pos[1]) / (t[0] - robby.pos[0]);
+      //let
+
+      return getDist(moveA.newPos,t).dist - getDist(moveB.newPos,t).dist;
+    });
 
     return moves;
 
@@ -119,13 +131,8 @@ function getCommands(field, power) {
   }
 }
 
-console.log(getCommands('................................................................###########.........#.........#.........#.#######.#.........#.#.......#.........#.#.#######.........#.#.#S.#............#.#.##.#............#.#....#............#.######............#...................###############........................................................................................................................T',400).join(''));
-//console.log(getCommands(`T.#...
-//                         #...#.
-//                         #####.
-//                         ......
-//                         .#####
-//                         .S#...`, 27).join('')); // should return a path
+//console.log(getCommands('................................................................###########.........#.........#.........#.#######.#.........#.#.......#.........#.#.#######.........#.#.#S.#............#.#.##.#............#.#....#............#.######............#...................###############........................................................................................................................T',400).join(''));
+//console.log(getCommands(`T.#...#...#.#####........#####.S#...`, 27).join('')); // should return a path
 
 //`T6#.7.
 // #.2.#.
