@@ -1,13 +1,12 @@
 'use strict';
 
 function getCommands(field, power) {
-  console.log(field, power);
   const side = Math.sqrt(field.length);
   const bestSoFar = { path: [], powerUsed: Infinity };
   let pathsConsidered = 0;
   const robby = {
-    pos: zToXy(field.indexOf('S'),side),
-    orientation: 0,// [0,1], // as an x/y coordinate relative to the current position
+    position: zToXy(field.indexOf('S'),side),
+    orientation: [0,1], // as an x/y coordinate relative to the current position
     path: [],
     powerUsed: 0
   };
@@ -17,9 +16,8 @@ function getCommands(field, power) {
       // variable, and each move function checks that first, and only continues if it's false.
 
   function move(robby, field){
-    //debugger;
     // END CONDITIONS --------------------------------------------------------------------------------------------------
-    const distToT = getDist(robby.pos, t).dist;
+    const distToT = getDist(robby.position, t).dist;
     if(0 === distToT){ // We reached Terminus!
       if(bestSoFar.powerUsed > robby.powerUsed){ // If we found a superior path than the previous best path
         bestSoFar.path = robby.path;
@@ -42,27 +40,16 @@ function getCommands(field, power) {
     }
     // Recursively move in all directions (using a Move function), in descending order of likelihood. Move function:
     nextMoves.forEach(aMove => { // Optimizing: Is there a way I could break early by using a for loop?
-      const orientationChange = Math.abs(robby.orientation - aMove.direction) % 2;
-      // 1,0 vs. 1,0 --> 0
-      // 1,0 vs. 0,1 --> 1
-      // 1,0 vs. 0,-1 --> 1
-      // 1,0 vs. -1,0 --> 2
-
-
-
-      const relativeDirectionToTurns = {0: [], 1: ['r'], 2: ['r', 'r'], 3: ['l']};
+      const turnCommands = getTurnsRequired(robby.orientation,aMove.direction);
       const newRobby = {
-        pos: aMove.newPos,
+        position: aMove.newPosition,
         orientation: aMove.direction,
-        powerUsed: robby.powerUsed + orientationChange + 1, // The 1 is for the move forward
-        path: robby.path.concat(
-          relativeDirectionToTurns[(aMove.direction - robby.orientation + 4) % 4], // concat the turns required
-          'f' // ...and the move forward
-        )
+        powerUsed: robby.powerUsed + turnCommands.length + 1, // 1 for each turn or move forward
+        path: robby.path.concat(turnCommands,'f') // turns and the move forward
       };
 
       // Set up the updated field for the next move: block off current(previous) place we were, so we don't backtrack
-      const previousLocation = xyToZ(robby.pos, side);
+      const previousLocation = xyToZ(robby.position, side);
       const newField = field.slice(0,previousLocation).concat('#',field.slice(previousLocation+1)); // Block our current position so we don't return here in future paths
 
       move(newRobby,newField);
@@ -71,7 +58,6 @@ function getCommands(field, power) {
 
   move(robby, field);
 
-  console.log(`Considered ${pathsConsidered} paths, and used ${bestSoFar.powerUsed} power. Best path: ${bestSoFar.path.join('')}`);
   return bestSoFar.path;
 
   // HELPER FUNCTIONS --------------------------------------------------------------------------------------------------
@@ -95,29 +81,24 @@ function getCommands(field, power) {
   function getNextMoves(robby,field){
     const side = Math.sqrt(field.length);
     const moves = [];
-    const moveDirections = [
-      {posChange: [-1, 0], direction: '3'},
-      {posChange: [0,1], direction: '0'},
-      {posChange: [1,0], direction: '1'},
-      {posChange: [0,-1], direction: '2'}
-    ];
+    const moveDirections = [ [-1, 0], [0,1], [1,0], [0,-1] ];
     moveDirections.forEach(move => {
-      const newPos = [robby.pos[0] + move.posChange[0], robby.pos[1] + move.posChange[1]];
-      const charAtNewPos = field[xyToZ(newPos,side)];
-      if(!validCoord(newPos,side)) {return;}   // return if the new position falls outside the field
+      const newPosition = [robby.position[0] + move[0], robby.position[1] + move[1]];
+      const charAtNewPos = field[xyToZ(newPosition,side)];
+      if(!validCoord(newPosition,side)) {return;}   // return if the new position falls outside the field
       if('#' === charAtNewPos) {return;}  // return if the new position is a block
 
-      moves.push({newPos: newPos, direction: move.direction});                 // push the new position if it's still a legal move
+      moves.push({newPosition: newPosition, direction: move});                 // push the new position if it's still a legal move
     });
 
     moves.sort((moveA,moveB) => {
-      const slope = (t[1] - robby.pos[1]) / (t[0] - robby.pos[0]);
+      const slope = (t[1] - robby.position[1]) / (t[0] - robby.position[0]);
       //let
 
-      return getDist(moveA.newPos,t).dist - getDist(moveB.newPos,t).dist;
+      return getDist(moveA.newPosition,t).dist - getDist(moveB.newPosition,t).dist;
     });
 
-    return moves;
+    return moves; // Array of objects like: {newPosition: [2,0], direction: [-1,0]}
 
     // TODO Identify likeliest candidate moves (i.e. the ones roughly in the direction of T)
     //  .sort((a,b) => { // TODO: Sort the moves according to which is the most likely to be promising
@@ -129,10 +110,48 @@ function getCommands(field, power) {
     return !(xy[0] < 0 || xy[1] < 0
     || xy[0] > side-1 || xy[1] > side-1);
   }
+
+  function getTurnsRequired(orientation,proposedMove){
+    const orientationDeg = degreesFromXy(orientation); // get degrees of current orientation
+    const moveDeg = degreesFromXy(proposedMove); // get degrees of current proposedMove
+    const degChangeRequired = (moveDeg - orientationDeg + 360) % 360; // Calculate the turn angle required to make the proposed move; no negative values
+    
+    const turnCommandPossibilities = {
+      0: [],
+      90: ['l'],
+      180: ['r','r'],
+      270: ['r']
+    };
+
+    return turnCommandPossibilities[degChangeRequired];
+  }
+
+  function degreesFromXy(xy){
+    if(xy.join(',') === '-1,0') {return 180;} // special case that isn't handled well by the math below
+
+    return ((Math.atan(xy[1] / xy[0]) / (Math.PI*2) * 360)  // get degrees from the xy coordinates
+            + 360) % 360                                    // convert it to positive (or 0) value under 360
+  }
 }
 
-//console.log(getCommands('................................................................###########.........#.........#.........#.#######.#.........#.#.......#.........#.#.#######.........#.#.#S.#............#.#.##.#............#.#....#............#.######............#...................###############........................................................................................................................T',400).join(''));
-//console.log(getCommands(`T.#...#...#.#####........#####.S#...`, 27).join('')); // should return a path
+getCommands('................................................................###########.........#.........#.........#.#######.#.........#.#.......#.........#.#.#######.........#.#.#S.#............#.#.##.#............#.#....#............#.######............#...................###############........................................................................................................................T',400).join('');
+getCommands(`T.#...#...#.#####........#####.S#...`, 27).join(''); // should return a path
+getCommands('T.S.', 10).join(''); // 'f'
+getCommands('S.......T', 10).join(''); // 'rffrff'
+getCommands('S.......T', 5).join(''); // ''
+getCommands('S#.##...T', 20).join(''); // ''
+getCommands('.........S......######............#.......######......T.........', 100).join('');
+
+//'rfffffrfflfffffrffflfffff' // what my function produces. Note that the first 'l' should be 'r'
+
+//    ........
+//    .S......  r
+//    ######..
+//    ........
+//    ..#.....
+//    ..######
+//    ......T.
+//    ........
 
 //`T6#.7.
 // #.2.#.
