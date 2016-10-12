@@ -33,10 +33,39 @@ const generatePrisonerSequence = function(n) {
 
 
 // Prisoner guessing rules
-const prisonerStrategy = function(state, day) {
+// Identity function
+const identity = (val => val);
+
+// Logical operators
+const equals = (state, a, b) => (a === b);
+const not = (state, a) => !a;
+const and = (state, a, b) => (a && b);
+const or = (state, a, b) => (a || b);
+const andBoolean = (state, a, b) => Boolean(a && b);
+const orBoolean = (state, a, b) => Boolean(a || b);
+const xor = (state, a, b) => Boolean((a || b) && !(a && b));
+
+// Day comparisons
+const onDayEqualToN = ({day, n}) => (day === (n - 1));
+const onEvenDay = state => (state.day % 2 === 0);
+
+// Visits comparisons
+const firstVisit = state => state.previousVisits === 0;
+const evenVisits = state => (state.previousVisits % 2 === 0);
+const evenVisitsButNotFirst = state => ((state.previousVisits % 2 === 0) && state.previousVisits !== 0);
+
+// Light state
+const lightIsOn = state => state.light;
+
+// Combination comparisons
+const lightOffOnStateMatchesDayEvenOddState = state => (state.light === !(state.day % 2 === 0));
+
+
+// Execute a strategy and return an action object
+const executePrisonerStrategy = function(strategy = {}, state) {
   return {
     setLightTo: false,
-    assertFinalPrisoner: day === 5 ? true : false,
+    assertFinalPrisoner: state.day === 5 ? true : false,
   };
 };
 
@@ -46,20 +75,27 @@ const numOfPrisoners = 6;
 const numOfTests = 20;
 const prisonerSequences = range(numOfTests).map(el => generatePrisonerSequence(numOfPrisoners));
 
-const testOneSequence = function(sequence, prisonerStrategy) {
+const testOneSequence = function(n, sequence, executePrisonerStrategy) {
   const initialState = {
     light: false,
     haveNotFailedYet: true,
+    day: -1,
+    previousVisits: false,
+    n: n,
   };
-  const finalGameState = sequence.reduce((state, prisoner, i) => {
+  const finalGameState = sequence.reduce((state, prisoner) => {
+    state.day++; // Increment the day
+    state.previousVisits = sequence.slice(0, state.day).filter(visitor => visitor === prisoner).length;
+
     if (!state.haveNotFailedYet) { // If they already died, don't progress further
       state.haveNotFailedYet = false;
       return state;
     }
-    const action = prisonerStrategy(state, i);
+
+    const action = executePrisonerStrategy({}, state);
 
     // If a prisoner who isn't the final prisoner asserts that they ARE the final prisoner, then they all die
-    if (i === (sequence.length-1)) {
+    if (state.day === (sequence.length-1)) {
       state.haveNotFailedYet = action.assertFinalPrisoner === true;
     } else {
       state.haveNotFailedYet = action.assertFinalPrisoner === false;
@@ -71,5 +107,5 @@ const testOneSequence = function(sequence, prisonerStrategy) {
   return finalGameState.haveNotFailedYet;
 };
 
-const testResults = prisonerSequences.map(sequence => testOneSequence([0,1,2,3,4,5], prisonerStrategy));
+const testResults = prisonerSequences.map(sequence => testOneSequence(6, [0,1,2,3,4,5], executePrisonerStrategy));
 console.log(testResults);
