@@ -1,3 +1,5 @@
+'use strict';
+
 /*
 
  There are 100 prisoners in solitary cells. There's a central living room with one light bulb; this bulb is initially
@@ -14,8 +16,7 @@
 // Utils
 const range = function(n) {
   return [...Array(n).keys()].map((el, i) => i);
-}
-console.log(range);
+};
 
 const generatePrisonerSequence = function(n) {
   const sequence = [];
@@ -28,13 +29,47 @@ const generatePrisonerSequence = function(n) {
   }
 
   return sequence;
-}
+};
+
 
 // Prisoner guessing rules
-
+const prisonerStrategy = function(state, day) {
+  return {
+    setLightTo: false,
+    assertFinalPrisoner: day === 5 ? true : false,
+  };
+};
 
 
 // Tests
 const numOfPrisoners = 6;
 const numOfTests = 20;
 const prisonerSequences = range(numOfTests).map(el => generatePrisonerSequence(numOfPrisoners));
+
+const testOneSequence = function(sequence, prisonerStrategy) {
+  const initialState = {
+    light: false,
+    haveNotFailedYet: true,
+  };
+  const finalGameState = sequence.reduce((state, prisoner, i) => {
+    if (!state.haveNotFailedYet) { // If they already died, don't progress further
+      state.haveNotFailedYet = false;
+      return state;
+    }
+    const action = prisonerStrategy(state, i);
+
+    // If a prisoner who isn't the final prisoner asserts that they ARE the final prisoner, then they all die
+    if (i === (sequence.length-1)) {
+      state.haveNotFailedYet = action.assertFinalPrisoner === true;
+    } else {
+      state.haveNotFailedYet = action.assertFinalPrisoner === false;
+    }
+    state.light = action.setLightTo;
+    return state;
+  }, initialState);
+
+  return finalGameState.haveNotFailedYet;
+};
+
+const testResults = prisonerSequences.map(sequence => testOneSequence([0,1,2,3,4,5], prisonerStrategy));
+console.log(testResults);
